@@ -3,13 +3,13 @@ name: OZIP Decrypter by TechyMinati..
 on:
   watch:
     types: [started]
-  # Add workflow_dispatch for manual triggering (optional but useful for testing)
   workflow_dispatch:
 
 env:
   FIRMWARE_LINK: https://rms01.realme.net/sw/RMX3261_11_A.91_20220819191422.zip
   FIRMWARE_NAME: RMX3261_11_A.91_20220819191422.zip
   TZ: Asia/Kolkata
+  ARTIFACT_NAME: decrypted-firmware-${{ github.run_id }} # Unique name for artifact
 
 jobs:
   build:
@@ -20,7 +20,6 @@ jobs:
          uses: actions/checkout@v4
 
        - name: Free Up Disk Space (Remove Pre-installed Stuff)
-         # Optional: Try removing things you don't need to get more space
          run: |
            echo "Initial disk space:"
            df -h
@@ -47,27 +46,28 @@ jobs:
              sudo -H pip3 install --upgrade setuptools wheel docopt pycryptodome
              wget https://raw.githubusercontent.com/techyminati/oppo_ozip_decrypt/master/ozipdecrypt.py
              echo "Decrypting $FIRMWARE_NAME..."
-             # Run decryption (might still create 'out' owned by root if script uses sudo internally or writes to protected areas)
              sudo python3 ozipdecrypt.py "$FIRMWARE_NAME"
              echo "Decryption complete. Output in 'out' directory."
-             # IMPORTANT: Free up space by removing the original downloaded file
              echo "Removing original file: $FIRMWARE_NAME"
              rm -f "$FIRMWARE_NAME"
              echo "Listing contents of 'out' directory:"
              ls -lh out/
 
-       - name: Package and Upload Decrypted Files
+       - name: Package Decrypted Files
          run: |
           echo "Zipping contents of 'out' directory..."
-          # Ensure zip command is available (added to previous step)
-          # Zip the contents *of* the 'out' directory from the workspace directory.
-          # Create the zip in the workspace root.
+          # Zip the contents *of* the 'out' directory. Create zip in workspace root.
           zip -r decrypted.zip out/*
           echo "Zipping complete: decrypted.zip created."
+          ls -lh decrypted.zip # Show the created zip file size
 
-          echo "Uploading decrypted.zip to transfer.sh..."
-          # Upload the ZIP created in the workspace root.
-          curl --upload-file decrypted.zip https://transfer.sh/decrypted.zip > links.txt
+       # --- NEW STEP: Upload using GitHub Artifacts ---
+       - name: Upload Decrypted Firmware as Artifact
+         uses: actions/upload-artifact@v4
+         with:
+           name: ${{ env.ARTIFACT_NAME }} # Use the env variable for artifact name
+           path: decrypted.zip # Path to the file to upload
+           retention-days: 5 # Optional: How long to keep the artifact (default 90)
 
           echo "Upload complete. Link:"
           # Display the link in the logs
