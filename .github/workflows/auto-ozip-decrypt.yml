@@ -43,6 +43,13 @@ jobs:
              
        - name: Upload Decrypted Zip
          run: |
-              touch links.txt
-              curl -sL https://git.io/file-transfer | sh
-              ./transfer srv *.zip
+          # Navigate to the out/ directory
+          cd out
+          # Package all decrypted files into a single ZIP
+          zip -r decrypted.zip *
+          # Move back to the root directory
+          cd ..
+          # Upload the ZIP to transfer.sh and save the link to links.txt
+          curl --upload-file out/decrypted.zip https://transfer.sh/decrypted.zip > links.txt
+          # Display the link in the logs
+          cat links.txt
