@@ -3,6 +3,8 @@ name: OZIP Decrypter by TechyMinati..
 on:
   watch:
     types: [started]
+  # Add workflow_dispatch for manual triggering (optional but useful for testing)
+  workflow_dispatch:
 
 env:
   FIRMWARE_LINK: https://rms01.realme.net/sw/RMX3261_11_A.91_20220819191422.zip
@@ -15,41 +17,59 @@ jobs:
 
     steps:
        - name: Checkout
-         # Use a specific version tag like v3 or v4 for better stability
          uses: actions/checkout@v4
+
+       - name: Free Up Disk Space (Remove Pre-installed Stuff)
+         # Optional: Try removing things you don't need to get more space
+         run: |
+           echo "Initial disk space:"
+           df -h
+           sudo rm -rf /usr/share/dotnet
+           sudo rm -rf /opt/ghc
+           sudo rm -rf "/usr/local/share/boost"
+           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+           echo "Disk space after cleanup:"
+           df -h
 
        - name: Downloading Ozip Now..
          run: |
             sudo apt-get -qq update
-            # Add -y flag for non-interactive install
             sudo apt-get install -y aria2
-            # Quote the variable in case the filename has spaces (though this one doesn't)
-            aria2c "$FIRMWARE_LINK"
+            echo "Downloading $FIRMWARE_NAME..."
+            aria2c --console-log-level=warn --summary-interval=10 -x 16 -s 16 -k 1M "$FIRMWARE_LINK" -o "$FIRMWARE_NAME"
+            echo "Download complete."
 
        - name: Decrypting Ozip Now
          run: |
              sudo apt-get -qq update
-             sudo apt-get install -y python3-pip
+             sudo apt-get install -y python3-pip zip
              sudo -H pip3 install --upgrade pip
-             # You can combine pip installs
              sudo -H pip3 install --upgrade setuptools wheel docopt pycryptodome
              wget https://raw.githubusercontent.com/techyminati/oppo_ozip_decrypt/master/ozipdecrypt.py
-             # Keep sudo here, as the script created 'out' owned by root in the logs
+             echo "Decrypting $FIRMWARE_NAME..."
+             # Run decryption (might still create 'out' owned by root if script uses sudo internally or writes to protected areas)
              sudo python3 ozipdecrypt.py "$FIRMWARE_NAME"
+             echo "Decryption complete. Output in 'out' directory."
+             # IMPORTANT: Free up space by removing the original downloaded file
+             echo "Removing original file: $FIRMWARE_NAME"
+             rm -f "$FIRMWARE_NAME"
+             echo "Listing contents of 'out' directory:"
+             ls -lh out/
 
-       - name: Package and Upload Decrypted Files # Renamed step for clarity
+       - name: Package and Upload Decrypted Files
          run: |
+          echo "Zipping contents of 'out' directory..."
+          # Ensure zip command is available (added to previous step)
           # Zip the contents *of* the 'out' directory from the workspace directory.
-          # This creates decrypted.zip in the workspace, avoiding permission issues inside 'out'.
-          # Using 'out/*' ensures you zip the files *inside* 'out', not the 'out' directory itself.
+          # Create the zip in the workspace root.
           zip -r decrypted.zip out/*
+          echo "Zipping complete: decrypted.zip created."
 
-          # Upload the ZIP created in the workspace root. The path is now just 'decrypted.zip'
+          echo "Uploading decrypted.zip to transfer.sh..."
+          # Upload the ZIP created in the workspace root.
           curl --upload-file decrypted.zip https://transfer.sh/decrypted.zip > links.txt
 
+          echo "Upload complete. Link:"
           # Display the link in the logs
           cat links.txt
-          # Upload the ZIP to transfer.sh and save the link to links.txt
-          curl --upload-file out/decrypted.zip https://transfer.sh/decrypted.zip > links.txt
-          # Display the link in the logs
           cat links.txt
