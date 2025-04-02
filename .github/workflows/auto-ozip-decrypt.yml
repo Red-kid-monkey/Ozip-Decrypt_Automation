@@ -9,8 +9,8 @@ env:
   FIRMWARE_LINK: https://rms01.realme.net/sw/RMX3261_11_A.91_20220819191422.zip
   FIRMWARE_NAME: RMX3261_11_A.91_20220819191422.zip
   TZ: Asia/Kolkata
-  ARTIFACT_NAME: decrypted-firmware-${{ github.run_id }} # Unique name for artifact
-
+  ARTIFACT_NAME: decrypted-firmware-${{ github.run_id }}
+  
 jobs:
   build:
     runs-on: ubuntu-20.04
@@ -61,15 +61,15 @@ jobs:
           echo "Zipping complete: decrypted.zip created."
           ls -lh decrypted.zip # Show the created zip file size
 
-       # --- NEW STEP: Upload using GitHub Artifacts ---
        - name: Upload Decrypted Firmware as Artifact
          uses: actions/upload-artifact@v4
          with:
-           name: ${{ env.ARTIFACT_NAME }} # Use the env variable for artifact name
-           path: decrypted.zip # Path to the file to upload
-           retention-days: 5 # Optional: How long to keep the artifact (default 90)
+           name: ${{ env.ARTIFACT_NAME }} 
+           path: decrypted.zip 
+           retention-days: 5
 
-          echo "Upload complete. Link:"
-          # Display the link in the logs
-          cat links.txt
-          cat links.txt
+             echo "Upload complete. Link:"
+
+            cat links.txt
+            cat links.txt
+ 
