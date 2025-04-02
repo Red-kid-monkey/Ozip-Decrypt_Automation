@@ -15,7 +15,7 @@ on:
 
 env:
   FIRMWARE_LINK: https://rms01.realme.net/sw/RMX3261_11_A.91_20220819191422.zip
-  FIRMWARE_NAME: RMX3261_11_A.91_20220819191422
+  FIRMWARE_NAME: RMX3261_11_A.91_20220819191422.zip
   TZ: Asia/Kolkata
 
 jobs:
@@ -35,11 +35,11 @@ jobs:
        - name: Decrypting Ozip Now
          run: |
              sudo -E apt-get -qq update
-             sudo apt-get install -y python3-pip3
-             sudo -H pip3 install --upgrade pip3
+             sudo apt-get install -y python3-pip
+             sudo -H pip3 install --upgrade pip
              sudo -H pip3 install setuptools wheel docopt pycryptodome
              wget https://raw.githubusercontent.com/techyminati/oppo_ozip_decrypt/master/ozipdecrypt.py
-             sudo python ozipdecrypt.py $FIRMWARE_NAME
+             sudo python3 ozipdecrypt.py $FIRMWARE_NAME
              
        - name: Upload Decrypted Zip
          run: |
