@@ -1,15 +1,6 @@
 name: OZIP Decrypter by TechyMinati..
 
 on:
-#  release:
-#    types: [published]
-#  push:
-#    branches:
-#      - master
-#    paths:
-#      - '.config'
-#  schedule:
-#    - cron: 0 8 * * 5
   watch:
     types: [started]
 
@@ -24,31 +15,40 @@ jobs:
 
     steps:
        - name: Checkout
-         uses: actions/checkout@master
-         
-       - name: Downloading Ozip Now.. 
+         # Use a specific version tag like v3 or v4 for better stability
+         uses: actions/checkout@v4
+
+       - name: Downloading Ozip Now..
          run: |
-            sudo -E apt-get -qq update
-            sudo apt install aria2
-            aria2c $FIRMWARE_LINK
-             
+            sudo apt-get -qq update
+            # Add -y flag for non-interactive install
+            sudo apt-get install -y aria2
+            # Quote the variable in case the filename has spaces (though this one doesn't)
+            aria2c "$FIRMWARE_LINK"
+
        - name: Decrypting Ozip Now
          run: |
-             sudo -E apt-get -qq update
+             sudo apt-get -qq update
              sudo apt-get install -y python3-pip
-             sudo -H pip3 install --upgrade pip 
-             sudo -H pip3 install setuptools wheel docopt pycryptodome
+             sudo -H pip3 install --upgrade pip
+             # You can combine pip installs
+             sudo -H pip3 install --upgrade setuptools wheel docopt pycryptodome
              wget https://raw.githubusercontent.com/techyminati/oppo_ozip_decrypt/master/ozipdecrypt.py
-             sudo python3 ozipdecrypt.py $FIRMWARE_NAME
-             
-       - name: Upload Decrypted Zip
+             # Keep sudo here, as the script created 'out' owned by root in the logs
+             sudo python3 ozipdecrypt.py "$FIRMWARE_NAME"
+
+       - name: Package and Upload Decrypted Files # Renamed step for clarity
          run: |
-          # Navigate to the out/ directory
-          cd out
-          # Package all decrypted files into a single ZIP
-          zip -r decrypted.zip *
-          # Move back to the root directory
-          cd ..
+          # Zip the contents *of* the 'out' directory from the workspace directory.
+          # This creates decrypted.zip in the workspace, avoiding permission issues inside 'out'.
+          # Using 'out/*' ensures you zip the files *inside* 'out', not the 'out' directory itself.
+          zip -r decrypted.zip out/*
+
+          # Upload the ZIP created in the workspace root. The path is now just 'decrypted.zip'
+          curl --upload-file decrypted.zip https://transfer.sh/decrypted.zip > links.txt
+
+          # Display the link in the logs
+          cat links.txt
           # Upload the ZIP to transfer.sh and save the link to links.txt
           curl --upload-file out/decrypted.zip https://transfer.sh/decrypted.zip > links.txt
           # Display the link in the logs
