@@ -36,7 +36,7 @@ jobs:
          run: |
              sudo -E apt-get -qq update
              sudo apt-get install -y python3-pip
-             sudo -H pip3 install --upgrade pip
+             sudo -H pip3 install --upgrade pip 
              sudo -H pip3 install setuptools wheel docopt pycryptodome
              wget https://raw.githubusercontent.com/techyminati/oppo_ozip_decrypt/master/ozipdecrypt.py
              sudo python3 ozipdecrypt.py $FIRMWARE_NAME
@@ -45,4 +45,4 @@ jobs:
          run: |
               touch links.txt
               curl -sL https://git.io/file-transfer | sh
-              ./transfer wet *.zip
+              ./transfer srv *.zip
